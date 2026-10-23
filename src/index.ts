@@ -179,11 +179,7 @@ export function errorResponse(error: string): BaseResponse<never> {
 export type PropertySource = CountryCode;
 
 export type PropertyListingStatus =
-  | 'for_sale'
-  | 'pending'
-  | 'sold'
-  | 'delisted'
-  | 'unknown';
+  'for_sale' | 'pending' | 'sold' | 'delisted' | 'unknown';
 
 export interface PropertyAddress {
   street: string;
@@ -301,12 +297,7 @@ export interface PropertySearchResponse {
 // =============================================================================
 
 export type PriceHistoryEvent =
-  | 'listed'
-  | 'price_change'
-  | 'pending'
-  | 'sold'
-  | 'delisted'
-  | 'relisted';
+  'listed' | 'price_change' | 'pending' | 'sold' | 'delisted' | 'relisted';
 
 export interface PriceHistoryEntry {
   date: string;
@@ -325,11 +316,7 @@ export interface PropertyPriceHistoryResponse {
 // =============================================================================
 
 export type PretendOfferStatus =
-  | 'active'
-  | 'won'
-  | 'lost'
-  | 'cancelled'
-  | 'expired';
+  'active' | 'won' | 'lost' | 'cancelled' | 'expired';
 
 export interface PretendOffer {
   id: string;
@@ -384,10 +371,7 @@ export interface UserProfile {
 }
 
 export type TransactionType =
-  | 'initial_grant'
-  | 'offer_won_payout'
-  | 'offer_lost_payment'
-  | 'solo_bonus';
+  'initial_grant' | 'offer_won_payout' | 'offer_lost_payment' | 'solo_bonus';
 
 export interface Transaction {
   id: string;
