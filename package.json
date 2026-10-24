@@ -1,6 +1,6 @@
 {
   "name": "@sudobility/mogulgame_types",
-  "version": "0.0.30",
+  "version": "0.0.31",
   "description": "TypeScript types for Starter API - template project",
   "type": "module",
   "main": "./dist/index.js",
