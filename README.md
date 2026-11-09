@@ -1,71 +1,142 @@
-# @sudobility/starter_types
+# @sudobility/mogulgame_types
 
-Shared TypeScript type definitions for the Starter API ecosystem.
+Shared TypeScript type definitions for the MogulGame ecosystem, plus a small set of
+runtime helpers. This is the foundation layer: every other `mogulgame_*` project depends
+on it, and nothing in the ecosystem sits below it except `@sudobility/types`.
+
+- **Package**: `@sudobility/mogulgame_types` (public)
+- **Module format**: ESM only (`"type": "module"`)
+- **License**: BUSL-1.1
 
 ## Installation
 
-```bash
-bun add @sudobility/starter_types
+Published to **GitHub Packages**, not the public npm registry. Consumers need an `.npmrc`
+scoping `@sudobility` to GitHub Packages (with an auth token for private access):
+
+```
+@sudobility:registry=https://npm.pkg.github.com
 ```
 
-Peer dependency:
+Then install the package and its peer dependency:
 
 ```bash
-bun add @sudobility/types
+bun add @sudobility/mogulgame_types @sudobility/types
 ```
+
+> Use **Bun** for dependency management (this repo is Bun-first). Do not use npm/yarn/pnpm.
 
 ## Usage
 
 ```ts
 import {
-  History,
-  HistoryCreateRequest,
-  HistoryUpdateRequest,
-  HistoryTotalResponse,
+  Property,
+  PretendOffer,
+  UserProfile,
+  LeaderboardResponse,
   successResponse,
   errorResponse,
-  BaseResponse,
-  NetworkClient,
-} from "@sudobility/starter_types";
+  isSuccessResponse,
+  isErrorResponse,
+  isCrawler,
+  type BaseResponse,
+  type CountryCode,
+} from '@sudobility/mogulgame_types';
 
-// Wrap API responses
-const ok = successResponse({ items: [] }); // { success: true, data: { items: [] } }
-const err = errorResponse("Not found"); // { success: false, error: "Not found" }
+// Standard API envelope
+const ok = successResponse({ properties: [] }); // { success: true, data: {...}, timestamp }
+const err = errorResponse('Not found');         // { success: false, error: 'Not found', timestamp }
+
+if (isSuccessResponse(ok)) {
+  // ok.data is narrowed and safe to use
+}
+
+// Crawler / headless-renderer detection (shared by mogulgame_api and mogulgame_app)
+isCrawler(request.headers.get('user-agent')); // boolean
 ```
 
-## Types
+## What's inside
 
-| Type | Description |
-|------|-------------|
-| `History` | Core data type (`id`, `user_id`, `datetime`, `value`, timestamps) |
-| `HistoryCreateRequest` | `{ datetime, value }` |
-| `HistoryUpdateRequest` | `{ datetime?, value? }` |
-| `HistoryTotalResponse` | `{ total }` |
-| `successResponse<T>` | Wraps data in `BaseResponse<T>` with `success: true` |
-| `errorResponse` | Wraps error string in `BaseResponse<never>` with `success: false` |
+All public types and helpers are exported from the `src/index.ts` barrel.
 
-Re-exports from `@sudobility/types`: `ApiResponse`, `BaseResponse`, `NetworkClient`, `Optional`.
+**Runtime helpers** (this package is not type-only):
+
+| Export | Purpose |
+|--------|---------|
+| `successResponse<T>(data)` | Wrap data in `BaseResponse<T>` with `success: true` + ISO timestamp |
+| `errorResponse(error)` | Wrap an error string with `success: false` + ISO timestamp |
+| `isSuccessResponse<T>(response)` | Type guard narrowing to a success response |
+| `isErrorResponse(response)` | Type guard narrowing to an error response |
+| `isCrawler(userAgent)` | Crawler/headless User-Agent detection via an explicit substring allowlist |
+
+**Domain types** (27 interfaces in `src/index.ts`):
+
+- **Core**: `User`, `ApiInfoResponse`, `HealthResponse`
+- **Property**: `Property`, `PropertyAddress`, `PropertyDetail`, `PropertyDetailSection`,
+  `PropertyTaxEntry`, `PropertyHistoryEvent`, `PropertySchool`, `PropertySearchRequest`,
+  `PropertySearchResponse`
+- **Price history**: `PriceHistoryEntry`, `PropertyPriceHistoryResponse`
+- **Offers**: `PretendOffer`, `PretendOfferCreateRequest`, `PretendOfferUpdateRequest`,
+  `PretendOfferResolution`
+- **User state**: `UserProfile`, `Transaction`
+- **Leaderboard**: `LeaderboardEntry`, `LeaderboardRequest`, `LeaderboardResponse`
+- **Views / favorites**: `PropertyView`, `PropertyViewsResponse`, `PropertyFavorite`,
+  `PropertyFavoritesResponse`
+
+**Aliases / unions**: `ISODateString`, `CountryCode` (`'US'|'CA'|'GB'|'AE'|'ES'|'AU'`),
+`CurrencyCode`, `PropertySource`, `PropertyListingStatus`, `PriceHistoryEvent`,
+`PretendOfferStatus`, `PretendOfferPayoutType`, `TransactionType`.
+
+**Re-exported from `@sudobility/types`**: `ApiResponse`, `BaseResponse`, `NetworkClient`,
+`Optional` — so consumers only need to import from this package.
 
 ## Development
 
 ```bash
-bun run build          # Build dual ESM/CJS output
-bun run dev            # Watch mode
-bun test               # Run Vitest tests
-bun run typecheck      # TypeScript check
-bun run lint           # ESLint
-bun run verify         # All checks + build (use before commit)
+bun install            # Install dependencies (Bun only)
+bun run build          # tsc -p tsconfig.esm.json  (ESM only, emits to dist/)
+bun run dev            # tsc --watch
+bun run test:unit      # Run Vitest tests once
+bun run test:watch     # Vitest in watch mode
+bun run test:coverage  # Vitest with coverage
+bun run typecheck      # tsc --noEmit
+bun run lint           # ESLint over src
+bun run lint:fix       # ESLint with --fix
+bun run format         # Prettier write
+bun run verify         # typecheck + lint + test:unit + build (run before publishing)
 ```
 
-## Related Packages
+After building, sanity-check that runtime exports resolve (see Gotchas below):
 
-- **starter_api** -- Backend API server (Hono + PostgreSQL)
-- **starter_client** -- API client SDK with TanStack Query hooks
-- **starter_lib** -- Business logic library with Zustand stores
-- **starter_app** -- React web application
-- **starter_app_rn** -- React Native mobile app
+```bash
+node -e "import('./dist/index.js').then(m => console.log(typeof m.isCrawler))"
+```
 
-All other starter_* projects depend on this package.
+## Gotchas
+
+- **Relative re-exports MUST carry a `.js` extension** (e.g. `export * from './crawler.js'`).
+  Omitting it typechecks, passes Vitest, and builds, then dies at runtime with
+  `ERR_MODULE_NOT_FOUND` — `tsc` emits ESM specifiers verbatim. `bun run verify` does not catch
+  this; verify the built `dist/index.js` imports in Node.
+- Changes here affect **all** consumer projects. Always consider downstream impact.
+- Do not add runtime dependencies; keep the package lightweight.
+
+## Architecture
+
+```
+@sudobility/mogulgame_types (this package)
+        ^
+mogulgame_api      (dependency)      — Hono + PostgreSQL backend
+mogulgame_client   (devDependency)   — API client SDK, type-only use
+mogulgame_lib      (devDependency)   — pure helper functions
+mogulgame_app      (dependency)      — web app
+mogulgame_app_rn   (dependency)      — React Native app
+```
+
+## Publishing
+
+CI (`.github/workflows/ci-cd.yml`) publishes to GitHub Packages on push to `main`/`develop`.
+Publishing is orchestrated by `mogulgame_app/scripts/push_all.sh`, which **skips repos with
+clean working trees** — a committed-but-unpublished change needs a manual version bump and push.
 
 ## License
 

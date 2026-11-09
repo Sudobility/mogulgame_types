@@ -7,7 +7,8 @@
 
 Shared TypeScript type definitions for the MogulGame ecosystem, plus a handful of runtime helpers.
 
-**npm**: `@sudobility/mogulgame_types` (public, BUSL-1.1)
+**Package**: `@sudobility/mogulgame_types` (public, BUSL-1.1), published to **GitHub Packages**
+(not npmjs). `.npmrc` scopes `@sudobility` to `https://npm.pkg.github.com`.
 
 ## Tech Stack
 
@@ -32,10 +33,10 @@ src/
 ```bash
 bun run build          # tsc -p tsconfig.esm.json  (ESM only)
 bun run dev            # Watch mode
-bun run test           # Run Vitest tests
+bun run test:unit      # Run Vitest tests (there is NO `test` script; `bun run test` fails)
 bun run typecheck      # TypeScript check
 bun run lint           # Run ESLint
-bun run verify         # typecheck + lint + test + build (use before commit)
+bun run verify         # typecheck + lint + test:unit + build (use before commit)
 bun run prepublishOnly # Clean + verify (runs on publish)
 ```
 
@@ -122,6 +123,8 @@ Foundation layer. Nothing in the ecosystem sits below it except `@sudobility/typ
   node -e "import('./dist/index.js').then(m => console.log(typeof m.isCrawler))"
   ```
 
+- Two ESLint flat configs exist: `eslint.config.js` (used — flat-config lookup picks `.js` first)
+  and `eslint.config.mjs` (dead/unused). Edit `eslint.config.js`; the `.mjs` has no effect
 - Changes here affect ALL consumer projects -- always consider downstream impact
 - Always run `bun run verify` before publishing, and additionally import `dist/index.js` in Node (see above)
 - The `BaseResponse<T>` wrapper is the standard API envelope -- all API responses must conform to it
